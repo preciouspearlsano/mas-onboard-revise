@@ -1,0 +1,12 @@
+{
+  "sampleData": {
+    "68cd1c04-1fd0-4287-bfae-8fd1afee664c": {
+      "vars-middleName": "sample_data/defaultstringtype.dwl",
+      "vars-lastName": "sample_data/defaultstringtype_1.dwl",
+      "vars-firstName": "sample_data/defaultstringtype_2.dwl",
+      "vars-status": "sample_data/defaultstringtype_3.dwl",
+      "vars-officerAcctId": "sample_data/defaultstringtype_4.dwl",
+      "vars-submissionId": "sample_data/defaultstringtype_5.dwl"
+    }
+  }
+}

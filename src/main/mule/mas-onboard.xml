@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:spring="http://www.mulesoft.org/schema/mule/spring" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd">
+	<http:listener-config name="connection1" doc:name="HTTP Listener config" doc:id="06d43968-14f6-4e4d-98da-5302b166707f" basePath="/mas/onboard/v1" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+		
+	</http:listener-config>
+	
+	
+	<flow name="get-onboard-list-static-flow" doc:id="a2d54a22-bbce-45f0-a061-b6f4c39e08bd" >
+		<http:listener doc:name="Listener" doc:id="b85a57e1-7e31-4707-a6bc-c42d98df8a00" config-ref="connection1" path="/external/onboard-list"/>
+		<java:invoke-static doc:name="Invoke static" doc:id="943633a4-4474-44f4-9e8f-1728c837212f" class="mas.onboard.service.OnboardService" method="getOnboardList(java.lang.String)">
+			<java:args ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	loginId: attributes.headers.'x-api-login-id' as String
+}]]]></java:args>
+		</java:invoke-static>
+		<ee:transform doc:name="Transform Message" doc:id="bea7622d-16c5-4afd-9f0c-e02bfcd23df8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			
+		</ee:transform>
+	</flow>
+	<flow name="get-onboard-list-install-flow" doc:id="7b0ee127-576a-45af-8d3d-9039595a2fb5" >
+		<http:listener doc:name="Listener" doc:id="11f21df4-d016-4b9d-88f3-6843eec5a109" config-ref="connection1" path="/external/onboard-list/install"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6092dd7c-b24d-4276-bdc4-6055feec2bea" />
+		<java:new constructor="OnboardService()" doc:name="New" doc:id="9358dca4-fac7-483c-b025-08953fd17c43" class="mas.onboard.service.OnboardService" target="ob"/>
+		<java:invoke doc:name="Invoke" doc:id="b467af19-5f17-4fe5-ae03-83b7d513da06" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="getOnboardListInstall()"/>
+		<ee:transform doc:name="Transform Message" doc:id="1ac381e0-d23c-4ae2-b0d3-cfda80743ccd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="get-onboard-load-flow" doc:id="cfb626c7-2be5-4b6c-8d87-fd9cc0447cf2" >
+		<http:listener doc:name="Listener" doc:id="0ab7c634-6a3d-4a7e-8d3c-e97ba58b8871" config-ref="connection1" path="/external/onboard-load/{submissionId}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="025bfa4e-f77d-4919-b113-e89d6e88afb9" message="#[attributes]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="2ec2d05d-5504-4c2c-bb99-46cfa0a3f615" name="search-submissionid-uri-json-format-subflow" targetValue="#[message]"/>
+		<java:new doc:name="New" doc:id="0791f13c-7981-4418-87ec-7b6f4d5e04f4" class="mas.onboard.service.OnboardService" target="ob" constructor="OnboardService()"/>
+		<java:invoke doc:name="Invoke" doc:id="10449782-0496-48dc-acec-317030d94ff8" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="loadOnboard(mas.onboard.dto.StatusSearchRequest)">
+			<java:args ><![CDATA[#[payload]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="24e33482-979a-458e-9fbc-92e8cd648b86" mimeType="application/json" encoding="UTF-8"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4aa2c5ec-4eeb-447e-90ae-888215bc4851" message="#[payload]"/>
+	</flow>
+	<sub-flow name="search-submissionid-uri-json-format-subflow" doc:id="53d4d67c-0a35-4d57-8133-96de4ec0b940" >
+		<set-variable value="#[message.attributes.headers.'x-api-login-id' default '' as String]" doc:name="officerAcctId" doc:id="78b09759-4779-4903-9f74-fd8aaf97c9a8" variableName="officerAcctId" />
+		<set-variable value="#[message.attributes.uriParams.submissionId default '' as String]" doc:name="submissionId" doc:id="adc19dbd-1064-4f21-8298-6319b381e349" variableName="submissionId" />
+		<set-variable value="#[message.attributes.queryParams.firstName default '' as String]" doc:name="firstName" doc:id="6328c6b6-68c3-40fd-ab74-cccc2a8bab28" variableName="firstName"/>
+		<set-variable value="#[message.attributes.queryParams.middleName default '' as String]" doc:name="middleName" doc:id="533b01fa-9946-411c-a2ae-a9b56c70b508" variableName="middleName"/>
+		<set-variable value="#[message.attributes.queryParams.lastName default '' as String]" doc:name="lastName" doc:id="40f5ffe6-22b7-48fe-ac90-95ba77527032" variableName="lastName"/>
+		<set-variable value="#[message.attributes.queryParams.status default '' as String]" doc:name="status" doc:id="7f8762ce-6d7c-4345-b4b6-8a3ed62a5cd6" variableName="status"/>
+		<ee:transform doc:name="Transform Message" doc:id="8a08fb55-9b87-4bf5-bdf0-f0fab52cf766">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ search : {
+		submissionId : vars.submissionId,
+		officerAcctId : vars.officerAcctId,
+		firstName : vars.firstName,
+		middleName : vars.middleName,
+		lastName : vars.lastName,
+		status : vars.status
+	} as Object {class: "mas.onboard.dto.StatusSearchRequest"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="search-submissionid-queryparam-json-format-subflow" doc:id="42835276-382d-4649-b4bf-88f6f1f8e5bd" >
+		<flow-ref doc:name="Flow Reference" doc:id="c42b02e2-b0bb-4fef-8e09-4570cd8f3d04" name="search-submissionid-uri-json-format-subflow"/>
+		<set-variable value="#[message.attributes.queryParams.officerAcctId default '' as String]" doc:name="officerAcctId" doc:id="a170b371-fc50-4643-a586-fe99c27a7527" variableName="officerAcctId"/>
+		<set-variable value="#[message.attributes.queryParams.submissionId default '' as String]" doc:name="submissionId" doc:id="a8b30520-0e22-4918-9185-b1d8e4fefb0c" variableName="submissionId"/>
+		<ee:transform doc:name="Transform Message" doc:id="d24256b0-cd11-42ca-b489-9c10153d6139" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{ search : {
+		submissionId : vars.submissionId,
+		officerAcctId : vars.officerAcctId,
+		firstName : vars.firstName,
+		middleName : vars.middleName,
+		lastName : vars.lastName,
+		status : vars.status
+	} as Object {class: "mas.onboard.dto.StatusSearchRequest"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<flow name="post-onboard-load-cancel" doc:id="831d97a2-2ab4-4574-8858-9ea659dbb034" >
+		<http:listener doc:name="Listener" doc:id="ee878474-71b8-4358-b4f0-13d58f01f2e6" config-ref="connection1" path="/external/onboard-load/{submissionId}/cancel"/>
+		<logger level="INFO" doc:name="Logger" doc:id="eda8c6f6-25f9-4d0b-b778-b3903da15c2a" message="#[attributes]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="5e2e8450-0b27-4c22-8117-2851c7ff072a" name="search-submissionid-uri-json-format-subflow" targetValue="#[message]"/>
+		<java:new doc:name="New" doc:id="79135e42-cad9-40bb-b784-fb7c8146a670" class="mas.onboard.service.OnboardService" constructor="OnboardService()" target="ob"/>
+		<java:invoke doc:name="Invoke" doc:id="75d94de8-6f72-46fd-bed5-31335f0696ed" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="cancelOnboard(mas.onboard.dto.StatusSearchRequest)">
+			<java:args ><![CDATA[#[payload]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="a9e09462-fcec-49c6-b443-b835e353948a" mimeType="application/json" encoding="UTF-8"/>
+		<logger level="INFO" doc:name="Logger" doc:id="790f79a7-be3d-405b-a882-1f420b8c3369" message="#[payload]"/>
+	</flow>
+	<flow name="get-onboard-status-flow" doc:id="dd6f639e-8686-4caa-aae1-4f07c0f51150">
+		<http:listener doc:name="Listener" doc:id="5ef27986-adc6-43a9-9db5-cc4079e816b6" config-ref="connection1" path="/external/onboard-load/status" />
+		<logger level="INFO" doc:name="Logger" doc:id="908a3b49-6791-4543-bd54-a4f2be9f150c" message="#[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="4d799a80-75b9-4fa1-b883-9cc3448b5b33" name="search-submissionid-queryparam-json-format-subflow" targetValue="#[message]" />
+		<java:new doc:name="New" doc:id="483b0a74-f2b6-484a-a7e7-faff3b808cb9" class="mas.onboard.service.OnboardService" constructor="OnboardService()" target="ob"/>
+		<java:invoke doc:name="Invoke" doc:id="9f54c142-1720-44b9-a46c-233e2b7b0916" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="getOnboardStatus(mas.onboard.dto.StatusSearchRequest)">
+			<java:args ><![CDATA[#[payload]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="9225a90e-e957-44af-8f08-3061dd88cc2c" mimeType="application/json" encoding="UTF-8"/>
+		<logger level="INFO" doc:name="Logger" doc:id="982f0413-1730-4341-bc3f-a28269871628" message="#[payload]"/>
+	</flow>
+	<flow name="post-onboard-submit-flow" doc:id="e5dba0ad-e543-4ad6-b923-c8b51c7e172f" >
+		<http:listener doc:name="Listener" doc:id="ee90a533-528a-400a-996e-0afeeb4ad481" config-ref="connection1" path="/external/onboard-load/submission"/>
+		<logger level="INFO" doc:name="Logger" doc:id="01a02a00-c967-4247-a776-e0d41c0cf61f" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="01eda83d-9209-4e48-bd6e-efd651f4d023" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{ 
+	request : payload as Object {class: "mas.onboard.dto.StatusRequest"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<java:new constructor="OnboardService()" doc:name="New" doc:id="96e4f466-691e-4d65-a6bb-d9179ef1d333" class="mas.onboard.service.OnboardService" target="ob"/>
+		<java:invoke doc:name="Invoke" doc:id="79988b70-5b18-4c14-bf2e-8eb0428a2aa5" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="submitOnboard(mas.onboard.dto.StatusRequest)">
+			<java:args ><![CDATA[#[payload]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="2323f68d-2fba-469e-975c-43a99d2c4225" mimeType="application/json" encoding="UTF-8"/>
+		<logger level="INFO" doc:name="Logger" doc:id="e9475032-7c7d-4424-8d0f-0f144ef4bfc9" message="#[payload]"/>
+	</flow>
+	<flow name="put-onboard-submit-flow" doc:id="6fdee4ec-7f7b-4e92-bc2e-23f4dc31cd92" >
+		<http:listener doc:name="Listener" doc:id="fb558486-fd68-497e-9542-d026c3dd06c6" config-ref="connection1" path="/external/onboard-load/{submissionId}/submission"/>
+		<logger level="INFO" doc:name="Logger" doc:id="19714441-de1b-49f8-ae38-b3251530816f" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="9cca53b8-0842-4ee8-9166-843939da6465" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{ 
+	request : payload as Object {class: "mas.onboard.dto.StatusRequest"}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<java:new doc:name="New" doc:id="f9827f2b-15b8-4fc5-b11d-a26dc980a690" target="ob" class="mas.onboard.service.OnboardService" constructor="OnboardService()"/>
+		<java:invoke doc:name="Invoke" doc:id="2a8d5ea3-90ae-46ad-84fd-f3293b972958" instance="#[vars.ob]" class="mas.onboard.service.OnboardService" method="submitOnboard(mas.onboard.dto.StatusRequest)">
+			<java:args ><![CDATA[#[payload]]]></java:args>
+		</java:invoke>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="5ddbcb17-a9cb-4356-992d-716e469ac20f" mimeType="application/json" encoding="UTF-8"/>
+		<logger level="INFO" doc:name="Logger" doc:id="69e326ec-b23e-48f5-9c5e-8d240a57d43d" message="#[payload]"/>
+	</flow>
+</mule>

@@ -1,0 +1,13 @@
+%dw 2.0
+
+type auto_53d4d67c_0a35_4d57_8133_96de4ec0b940_Output_Payload = {|
+  search: {|
+    submissionId: String, 
+    officerAcctId: String, 
+    firstName: String, 
+    middleName: String, 
+    lastName: String, 
+    status: String
+  |} {"class": "mas.onboard.dto.StatusSearchRequest"}
+|}
+

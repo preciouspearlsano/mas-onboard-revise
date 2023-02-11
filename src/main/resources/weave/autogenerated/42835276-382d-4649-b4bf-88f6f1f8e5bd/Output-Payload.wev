@@ -1,0 +1,18 @@
+%dw 2.0
+
+type auto_42835276_382d_4649_b4bf_88f6f1f8e5bd_Output_Payload = {|
+  search?: mas_onboard_dto_StatusSearchRequest
+|} {"typeId": "getOnboardStatus(mas.onboard.dto.StatusSearchRequest)_INPUT"}
+type mas_onboard_dto_StatusSearchRequest = {|
+  firstName?: String, 
+  lastName?: String, 
+  middleName?: String, 
+  officerAcctId?: String, 
+  status?: String, 
+  submissionId?: String
+|} {"typeAlias": "StatusSearchRequest",
+"class": "mas.onboard.dto.StatusSearchRequest",
+"typeId": "mas.onboard.dto.StatusSearchRequest"}
+
+
+
